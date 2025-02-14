@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "Net/UnrealNetwork.h"
+
+
 #include "SimpleMultiGameCharacter.generated.h"
 
 class USpringArmComponent;
@@ -44,9 +47,18 @@ class ASimpleMultiGameCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
+	/* Shot Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* ShotAction;
+
 public:
 	ASimpleMultiGameCharacter();
-	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float LineTraceDistance = 0.f;
+
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TArray<AActor*> IngnoreActors;
 
 protected:
 
@@ -54,8 +66,7 @@ protected:
 	void Move(const FInputActionValue& Value);
 
 	/** Called for looking input */
-	void Look(const FInputActionValue& Value);
-			
+	void Look(const FInputActionValue& Value);		
 
 protected:
 
@@ -63,10 +74,26 @@ protected:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	/* Shot */
+	
+	UFUNCTION(Server, Unreliable)
+	void HandleShot();
+	void HandleShot_Implementation();
+
+	UFUNCTION()
+	void DrawLineTraceShot();
+	/* Shot */
+
 public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+private: 
+
+	FHitResult HitResult;
+
+
 };
 

@@ -11,6 +11,8 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 
+#include "Kismet/KismetSystemLibrary.h"
+
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 //////////////////////////////////////////////////////////////////////////
@@ -85,11 +87,27 @@ void ASimpleMultiGameCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASimpleMultiGameCharacter::Look);
+
+		// Shot
+		EnhancedInputComponent->BindAction(ShotAction, ETriggerEvent::Started, this, &ASimpleMultiGameCharacter::HandleShot);
 	}
 	else
 	{
 		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
+}
+
+void ASimpleMultiGameCharacter::HandleShot_Implementation()
+{
+	DrawLineTraceShot();
+}
+
+void ASimpleMultiGameCharacter::DrawLineTraceShot()
+{
+	auto TraceLength = GetFollowCamera()->GetComponentLocation() + (GetActorForwardVector() * LineTraceDistance);
+
+	UKismetSystemLibrary::LineTraceSingle(GetWorld(), GetFollowCamera()->GetComponentLocation(), TraceLength, ETraceTypeQuery::TraceTypeQuery1,
+		false, IngnoreActors, EDrawDebugTrace::ForDuration, HitResult, true);
 }
 
 void ASimpleMultiGameCharacter::Move(const FInputActionValue& Value)
