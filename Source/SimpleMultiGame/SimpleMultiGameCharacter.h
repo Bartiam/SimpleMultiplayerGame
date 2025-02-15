@@ -15,6 +15,7 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
+class AGameModeSimpleMultiGame_Base;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -59,13 +60,22 @@ class ASimpleMultiGameCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LeftCameraAction;
 
-	FHitResult HitResult;
+	/* Current Game Mode */
+	AGameModeSimpleMultiGame_Base* CurrentGameMode = nullptr;
 
 public:
 	ASimpleMultiGameCharacter();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Settings")
 	float LineTraceDistance = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Settings")
+	float CharacterDamage = 0.f;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Character Settings")
+	float CurrentHealth = 0.f;
 
 	TArray<AActor*> IngnoreActors;
 
@@ -132,5 +142,18 @@ private: // Private functions
 	void SetLeftCameraPosition_Implementation();
 
 	/* == Change Location Follow Camera == */
+
+
+
+	/* Take Damage and enabled ragdoll */
+	UFUNCTION()
+	void OnTakeDamageHealth(AActor* damageActor, float damage, const UDamageType* damageType,
+		AController* instigateBy, AActor* damageCauser);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void DeathAndEnabledRagdoll();
+	void DeathAndEnabledRagdoll_Implementation();
+
+	/* ==  Take Damage and enabled ragdoll == */
 };
 

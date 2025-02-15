@@ -2,16 +2,22 @@
 
 #include "SimpleMultiGameCharacter.h"
 #include "Engine/LocalPlayer.h"
+
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
+
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/GameplayStatics.h"
+
+#include "GameModes/GameModeSimpleMultiGame_Base.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -52,8 +58,18 @@ ASimpleMultiGameCharacter::ASimpleMultiGameCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	// Add Tag
+	Tags.Add(FName(TEXT("Player")));
+
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+}
+
+void ASimpleMultiGameCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ASimpleMultiGameCharacter, CurrentHealth);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -64,6 +80,10 @@ void ASimpleMultiGameCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	SetRightCameraPosition();
+
+	OnTakeAnyDamage.AddDynamic(this, &ASimpleMultiGameCharacter::OnTakeDamageHealth);
+
+	CurrentGameMode = Cast<AGameModeSimpleMultiGame_Base>(UGameplayStatics::GetGameMode(GetWorld()));
 }
 
 void ASimpleMultiGameCharacter::NotifyControllerChanged()
@@ -117,10 +137,14 @@ void ASimpleMultiGameCharacter::HandleShot_Implementation()
 
 void ASimpleMultiGameCharacter::DrawLineTraceShot()
 {
+	FHitResult HitResult;
 	auto TraceLength = GetFollowCamera()->GetComponentLocation() + (GetFollowCamera()->GetForwardVector() * LineTraceDistance);
 
 	UKismetSystemLibrary::LineTraceSingle(GetWorld(), GetFollowCamera()->GetComponentLocation(), TraceLength, ETraceTypeQuery::TraceTypeQuery1,
 		false, IngnoreActors, EDrawDebugTrace::ForDuration, HitResult, true);
+	
+	
+	UGameplayStatics::ApplyDamage(HitResult.GetActor(), CharacterDamage, GetInstigatorController(), this, UDamageType::StaticClass());
 }
 
 void ASimpleMultiGameCharacter::CameraRightPositionServer_Implementation()
@@ -141,6 +165,32 @@ void ASimpleMultiGameCharacter::SetRightCameraPosition_Implementation()
 void ASimpleMultiGameCharacter::SetLeftCameraPosition_Implementation()
 {
 	FollowCamera->SetRelativeLocation(LeftPositionCamera);
+}
+
+void ASimpleMultiGameCharacter::OnTakeDamageHealth(AActor* damageActor, float damage, const UDamageType* damageType, AController* instigateBy, AActor* damageCauser)
+{
+	if (HasAuthority())
+	{
+		CurrentHealth -= damage;
+
+		if (CurrentHealth <= 0.f)
+		{
+			DeathAndEnabledRagdoll();
+
+			FTimerDelegate TimerDelegate;
+			TimerDelegate.BindUObject(CurrentGameMode, &AGameModeSimpleMultiGame_Base::RespawnCharacter, GetInstigatorController());
+
+			FTimerHandle TimerHandle;
+			GetWorldTimerManager().SetTimer(TimerHandle, TimerDelegate, 5.f, false);
+		}
+	}
+}
+
+void ASimpleMultiGameCharacter::DeathAndEnabledRagdoll_Implementation()
+{
+	GetCapsuleComponent()->DestroyComponent();
+	GetMesh()->SetCollisionProfileName(FName(TEXT("BlockAll")));
+	GetMesh()->SetSimulatePhysics(true);
 }
 
 void ASimpleMultiGameCharacter::Move(const FInputActionValue& Value)
