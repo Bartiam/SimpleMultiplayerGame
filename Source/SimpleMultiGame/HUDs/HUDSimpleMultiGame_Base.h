@@ -13,6 +13,19 @@ class SIMPLEMULTIGAME_API AHUDSimpleMultiGame_Base : public AHUD
 {
 	GENERATED_BODY()
 	
+private: // Private variables
+
+	UPROPERTY()
+	class UUIDuringTheGame_Base* UIDuringTheGame = nullptr;
+
+public: // Private functions
+
+	UFUNCTION()
+	void DrawUIDuringTheGame();
+
+	UFUNCTION()
+	void DeleteUIDuringTheGame();
+
 protected: // Protected variables
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)

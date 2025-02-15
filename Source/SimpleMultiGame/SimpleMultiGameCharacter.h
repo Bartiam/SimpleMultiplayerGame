@@ -63,6 +63,8 @@ class ASimpleMultiGameCharacter : public ACharacter
 	/* Current Game Mode */
 	AGameModeSimpleMultiGame_Base* CurrentGameMode = nullptr;
 
+
+
 public:
 	ASimpleMultiGameCharacter();
 
@@ -90,6 +92,8 @@ protected:
 protected:
 
 	virtual void BeginPlay() override;
+
+	virtual void PossessedBy(AController* NewController) override;
 
 	virtual void NotifyControllerChanged() override;
 
@@ -155,5 +159,16 @@ private: // Private functions
 	void DeathAndEnabledRagdoll_Implementation();
 
 	/* ==  Take Damage and enabled ragdoll == */
+
+	/* Delete and Create UI During the game only on client */
+	UFUNCTION(Client, Unreliable)
+	void DeleteOwnUI();
+	void DeleteOwnUI_Implementation();
+
+	UFUNCTION(Client, Unreliable)
+	void CreateOwnUI();
+	void CreateOwnUI_Implementation();
+
+	/* Delete and Create UI During the game only on client */
 };
 

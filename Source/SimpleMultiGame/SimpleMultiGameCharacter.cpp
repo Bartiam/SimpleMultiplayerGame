@@ -8,7 +8,6 @@
 
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "GameFramework/Controller.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -18,6 +17,8 @@
 #include "Kismet/GameplayStatics.h"
 
 #include "GameModes/GameModeSimpleMultiGame_Base.h"
+#include "HUDs/HUDSimpleMultiGame_Base.h"
+#include "PlayerControllers/PlayerControllerSMG_Base.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -84,6 +85,14 @@ void ASimpleMultiGameCharacter::BeginPlay()
 	OnTakeAnyDamage.AddDynamic(this, &ASimpleMultiGameCharacter::OnTakeDamageHealth);
 
 	CurrentGameMode = Cast<AGameModeSimpleMultiGame_Base>(UGameplayStatics::GetGameMode(GetWorld()));
+}
+
+void ASimpleMultiGameCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	FTimerHandle TimerToCreateWidget;
+	GetWorldTimerManager().SetTimer(TimerToCreateWidget, this, &ASimpleMultiGameCharacter::CreateOwnUI, 1.f, false);
 }
 
 void ASimpleMultiGameCharacter::NotifyControllerChanged()
@@ -169,20 +178,19 @@ void ASimpleMultiGameCharacter::SetLeftCameraPosition_Implementation()
 
 void ASimpleMultiGameCharacter::OnTakeDamageHealth(AActor* damageActor, float damage, const UDamageType* damageType, AController* instigateBy, AActor* damageCauser)
 {
-	if (HasAuthority())
+	CurrentHealth -= damage;
+
+	if (CurrentHealth <= 0.f)
 	{
-		CurrentHealth -= damage;
+		DeathAndEnabledRagdoll();
 
-		if (CurrentHealth <= 0.f)
-		{
-			DeathAndEnabledRagdoll();
+		DeleteOwnUI();
 
-			FTimerDelegate TimerDelegate;
-			TimerDelegate.BindUObject(CurrentGameMode, &AGameModeSimpleMultiGame_Base::RespawnCharacter, GetInstigatorController());
+		FTimerDelegate TimerDelegate;
+		TimerDelegate.BindUObject(CurrentGameMode, &AGameModeSimpleMultiGame_Base::RespawnCharacter, GetInstigatorController());
 
-			FTimerHandle TimerHandle;
-			GetWorldTimerManager().SetTimer(TimerHandle, TimerDelegate, 5.f, false);
-		}
+		FTimerHandle TimerHandle;
+		GetWorldTimerManager().SetTimer(TimerHandle, TimerDelegate, 5.f, false);
 	}
 }
 
@@ -191,6 +199,22 @@ void ASimpleMultiGameCharacter::DeathAndEnabledRagdoll_Implementation()
 	GetCapsuleComponent()->DestroyComponent();
 	GetMesh()->SetCollisionProfileName(FName(TEXT("BlockAll")));
 	GetMesh()->SetSimulatePhysics(true);
+}
+
+void ASimpleMultiGameCharacter::DeleteOwnUI_Implementation()
+{
+	auto CurrentPlayerController = Cast<APlayerControllerSMG_Base>(GetController());
+	auto CurrentHUD = Cast<AHUDSimpleMultiGame_Base>(CurrentPlayerController->GetHUD());
+
+	CurrentHUD->DeleteUIDuringTheGame();
+}
+
+void ASimpleMultiGameCharacter::CreateOwnUI_Implementation()
+{
+	auto CurrentPlayerController = Cast<APlayerControllerSMG_Base>(GetController());
+	auto CurrentHUD = Cast<AHUDSimpleMultiGame_Base>(CurrentPlayerController->GetHUD());
+
+	CurrentHUD->DrawUIDuringTheGame();
 }
 
 void ASimpleMultiGameCharacter::Move(const FInputActionValue& Value)
