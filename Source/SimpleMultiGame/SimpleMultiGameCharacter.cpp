@@ -22,9 +22,6 @@
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
-//////////////////////////////////////////////////////////////////////////
-// ASimpleMultiGameCharacter
-
 ASimpleMultiGameCharacter::ASimpleMultiGameCharacter()
 {
 	// Set size for collision capsule
@@ -71,6 +68,7 @@ void ASimpleMultiGameCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ASimpleMultiGameCharacter, CurrentHealth);
+	DOREPLIFETIME(ASimpleMultiGameCharacter, AMMOCount);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -141,10 +139,34 @@ void ASimpleMultiGameCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 
 void ASimpleMultiGameCharacter::HandleShot_Implementation()
 {
-	DrawLineTraceShot();
+	if (bIsCanShot)
+	{
+		if (AMMOCount > 0)
+		{
+			--AMMOCount;
+			DrawLineTraceShot();
+			PlayShotSoundClient();
+			bIsCanShot = false;
+
+			FTimerHandle TimerToCoolDown;
+			GetWorldTimerManager().SetTimer(TimerToCoolDown, this, &ASimpleMultiGameCharacter::ChangeIsCanShot, ShotInRate, false);
+		}
+		else 
+			PlayNoAmmoSoundClient();
+	}
 }
 
-void ASimpleMultiGameCharacter::DrawLineTraceShot()
+void ASimpleMultiGameCharacter::PlayShotSoundClient_Implementation()
+{
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShotSound, GetActorLocation(), 1.f, 1.f, 0.f, SoundAttenuation);
+}
+
+void ASimpleMultiGameCharacter::PlayNoAmmoSoundClient_Implementation()
+{
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), NoAMMOSound, GetActorLocation(), 1.f, 1.f, 0.f, SoundAttenuation);
+}
+
+void ASimpleMultiGameCharacter::DrawLineTraceShot_Implementation()
 {
 	FHitResult HitResult;
 	auto TraceLength = GetFollowCamera()->GetComponentLocation() + (GetFollowCamera()->GetForwardVector() * LineTraceDistance);
@@ -152,9 +174,19 @@ void ASimpleMultiGameCharacter::DrawLineTraceShot()
 	UKismetSystemLibrary::LineTraceSingle(GetWorld(), GetFollowCamera()->GetComponentLocation(), TraceLength, ETraceTypeQuery::TraceTypeQuery1,
 		false, IngnoreActors, EDrawDebugTrace::ForDuration, HitResult, true);
 	
-	
-	UGameplayStatics::ApplyDamage(HitResult.GetActor(), CharacterDamage, GetInstigatorController(), this, UDamageType::StaticClass());
+	if (HitResult.GetActor() != nullptr && HitResult.GetActor()->ActorHasTag(FName(TEXT("Player"))))
+	{
+		ActorTakeDamageFromShot_Server(HitResult.GetActor());
+	}
 }
+
+void ASimpleMultiGameCharacter::ActorTakeDamageFromShot_Server_Implementation(AActor* HitActor)
+{
+	UGameplayStatics::ApplyDamage(HitActor, CharacterDamage, GetInstigatorController(), this, UDamageType::StaticClass());
+}
+
+void ASimpleMultiGameCharacter::ChangeIsCanShot()
+{ bIsCanShot = true; }
 
 void ASimpleMultiGameCharacter::CameraRightPositionServer_Implementation()
 {
@@ -199,6 +231,7 @@ void ASimpleMultiGameCharacter::DeathAndEnabledRagdoll_Implementation()
 	GetCapsuleComponent()->DestroyComponent();
 	GetMesh()->SetCollisionProfileName(FName(TEXT("BlockAll")));
 	GetMesh()->SetSimulatePhysics(true);
+	bIsCanShot = false;
 }
 
 void ASimpleMultiGameCharacter::DeleteOwnUI_Implementation()

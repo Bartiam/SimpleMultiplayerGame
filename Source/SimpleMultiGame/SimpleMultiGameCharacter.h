@@ -60,10 +60,21 @@ class ASimpleMultiGameCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LeftCameraAction;
 
+	/* Shot sounds */
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	USoundBase* ShotSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	USoundBase* NoAMMOSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	USoundAttenuation* SoundAttenuation;
+
+	/* == Shot sounds == */
+
 	/* Current Game Mode */
 	AGameModeSimpleMultiGame_Base* CurrentGameMode = nullptr;
-
-
 
 public:
 	ASimpleMultiGameCharacter();
@@ -78,6 +89,12 @@ public:
 
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Character Settings")
 	float CurrentHealth = 0.f;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Character Settings")
+	int32 AMMOCount = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Settings")
+	float ShotInRate = 0.f;
 
 	TArray<AActor*> IngnoreActors;
 
@@ -105,8 +122,21 @@ protected:
 	void HandleShot();
 	void HandleShot_Implementation();
 
-	UFUNCTION()
+	UFUNCTION(NetMulticast, Unreliable)
+	void PlayShotSoundClient();
+	void PlayShotSoundClient_Implementation();
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void PlayNoAmmoSoundClient();
+	void PlayNoAmmoSoundClient_Implementation();
+
+	UFUNCTION(Client, Unreliable)
 	void DrawLineTraceShot();
+	void DrawLineTraceShot_Implementation();
+
+	UFUNCTION(Server, Reliable)
+	void ActorTakeDamageFromShot_Server(AActor* HitActor);
+	void ActorTakeDamageFromShot_Server_Implementation(AActor* HitActor);
 	/* Shot */
 
 public:
@@ -123,7 +153,17 @@ protected: // Protected variables
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera Positions")
 	FVector LeftPositionCamera = FVector::ZeroVector;
 
+private: // Private variables
+
+	bool bIsCanShot = true;
+
 private: // Private functions
+
+	/* Character shot rate */
+
+	void ChangeIsCanShot();
+
+	/* == Character shot rate == */
 
 	/* == Change Location Follow Camera == */
 

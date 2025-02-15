@@ -6,12 +6,23 @@
 #include "Blueprint/UserWidget.h"
 #include "UIDuringTheGame_Base.generated.h"
 
-/**
- * 
- */
+
+
 UCLASS()
 class SIMPLEMULTIGAME_API UUIDuringTheGame_Base : public UUserWidget
 {
 	GENERATED_BODY()
 	
+private:
+	virtual void NativeConstruct() override;
+
+	class ASimpleMultiGameCharacter* CurrentCharacter = nullptr;
+
+protected:
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	float GetCurrentHealth();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	int32 GetCurrentAMMO();
 };
