@@ -59,6 +59,13 @@ ASimpleMultiGameCharacter::ASimpleMultiGameCharacter()
 //////////////////////////////////////////////////////////////////////////
 // Input
 
+void ASimpleMultiGameCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	SetRightCameraPosition();
+}
+
 void ASimpleMultiGameCharacter::NotifyControllerChanged()
 {
 	Super::NotifyControllerChanged();
@@ -90,6 +97,12 @@ void ASimpleMultiGameCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 
 		// Shot
 		EnhancedInputComponent->BindAction(ShotAction, ETriggerEvent::Started, this, &ASimpleMultiGameCharacter::HandleShot);
+
+		// Right Camera
+		EnhancedInputComponent->BindAction(RightCameraAction, ETriggerEvent::Started, this, &ASimpleMultiGameCharacter::CameraRightPositionServer);
+
+		// Left Camera
+		EnhancedInputComponent->BindAction(LeftCameraAction, ETriggerEvent::Started, this, &ASimpleMultiGameCharacter::CameraLeftPositionServer);
 	}
 	else
 	{
@@ -104,10 +117,30 @@ void ASimpleMultiGameCharacter::HandleShot_Implementation()
 
 void ASimpleMultiGameCharacter::DrawLineTraceShot()
 {
-	auto TraceLength = GetFollowCamera()->GetComponentLocation() + (GetActorForwardVector() * LineTraceDistance);
+	auto TraceLength = GetFollowCamera()->GetComponentLocation() + (GetFollowCamera()->GetForwardVector() * LineTraceDistance);
 
 	UKismetSystemLibrary::LineTraceSingle(GetWorld(), GetFollowCamera()->GetComponentLocation(), TraceLength, ETraceTypeQuery::TraceTypeQuery1,
 		false, IngnoreActors, EDrawDebugTrace::ForDuration, HitResult, true);
+}
+
+void ASimpleMultiGameCharacter::CameraRightPositionServer_Implementation()
+{
+	SetRightCameraPosition();
+}
+
+void ASimpleMultiGameCharacter::CameraLeftPositionServer_Implementation()
+{
+	SetLeftCameraPosition();
+}
+
+void ASimpleMultiGameCharacter::SetRightCameraPosition_Implementation()
+{
+	FollowCamera->SetRelativeLocation(RightPositionCamera);
+}
+
+void ASimpleMultiGameCharacter::SetLeftCameraPosition_Implementation()
+{
+	FollowCamera->SetRelativeLocation(LeftPositionCamera);
 }
 
 void ASimpleMultiGameCharacter::Move(const FInputActionValue& Value)

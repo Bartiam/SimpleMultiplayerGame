@@ -51,13 +51,22 @@ class ASimpleMultiGameCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ShotAction;
 
+	/* Right Camera Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* RightCameraAction;
+
+	/* Left Camera Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* LeftCameraAction;
+
+	FHitResult HitResult;
+
 public:
 	ASimpleMultiGameCharacter();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float LineTraceDistance = 0.f;
 
-	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TArray<AActor*> IngnoreActors;
 
 protected:
@@ -69,6 +78,8 @@ protected:
 	void Look(const FInputActionValue& Value);		
 
 protected:
+
+	virtual void BeginPlay() override;
 
 	virtual void NotifyControllerChanged() override;
 
@@ -90,10 +101,36 @@ public:
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
-private: 
+protected: // Protected variables
 
-	FHitResult HitResult;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera Positions")
+	FVector RightPositionCamera = FVector::ZeroVector;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera Positions")
+	FVector LeftPositionCamera = FVector::ZeroVector;
 
+private: // Private functions
+
+	/* == Change Location Follow Camera == */
+
+	/* Server calls */
+	UFUNCTION(Server, Unreliable)
+	void CameraRightPositionServer();
+	void CameraRightPositionServer_Implementation();
+
+	UFUNCTION(Server, Unreliable)
+	void CameraLeftPositionServer();
+	void CameraLeftPositionServer_Implementation();
+
+	/* Multicast calls */
+	UFUNCTION(NetMulticast, Unreliable)
+	void SetRightCameraPosition();
+	void SetRightCameraPosition_Implementation();
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void SetLeftCameraPosition();
+	void SetLeftCameraPosition_Implementation();
+
+	/* == Change Location Follow Camera == */
 };
 
