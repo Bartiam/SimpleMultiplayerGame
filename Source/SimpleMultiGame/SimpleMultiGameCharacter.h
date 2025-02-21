@@ -33,42 +33,42 @@ class ASimpleMultiGameCharacter : public ACharacter
 	UCameraComponent* FollowCamera;
 	
 	/** MappingContext */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputMappingContext* DefaultMappingContext;
 
 	/** Jump Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
 
 	/** Move Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
 
 	/** Look Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
 	/* Shot Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ShotAction;
 
 	/* Right Camera Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* RightCameraAction;
 
 	/* Left Camera Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LeftCameraAction;
 
 	/* Shot sounds */
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	USoundBase* ShotSound;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	USoundBase* NoAMMOSound;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	USoundAttenuation* SoundAttenuation;
 
 	/* == Shot sounds == */
@@ -120,23 +120,18 @@ protected:
 	
 	UFUNCTION(Server, Unreliable)
 	void HandleShot();
-	void HandleShot_Implementation();
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void PlayShotSoundClient();
-	void PlayShotSoundClient_Implementation();
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void PlayNoAmmoSoundClient();
-	void PlayNoAmmoSoundClient_Implementation();
 
 	UFUNCTION(Client, Unreliable)
 	void DrawLineTraceShot();
-	void DrawLineTraceShot_Implementation();
 
 	UFUNCTION(Server, Reliable)
 	void ActorTakeDamageFromShot_Server(AActor* HitActor);
-	void ActorTakeDamageFromShot_Server_Implementation(AActor* HitActor);
 	/* Shot */
 
 public:
@@ -170,20 +165,16 @@ private: // Private functions
 	/* Server calls */
 	UFUNCTION(Server, Unreliable)
 	void CameraRightPositionServer();
-	void CameraRightPositionServer_Implementation();
 
 	UFUNCTION(Server, Unreliable)
 	void CameraLeftPositionServer();
-	void CameraLeftPositionServer_Implementation();
 
 	/* Multicast calls */
 	UFUNCTION(NetMulticast, Unreliable)
 	void SetRightCameraPosition();
-	void SetRightCameraPosition_Implementation();
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void SetLeftCameraPosition();
-	void SetLeftCameraPosition_Implementation();
 
 	/* == Change Location Follow Camera == */
 
@@ -196,18 +187,15 @@ private: // Private functions
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void DeathAndEnabledRagdoll();
-	void DeathAndEnabledRagdoll_Implementation();
 
 	/* ==  Take Damage and enabled ragdoll == */
 
 	/* Delete and Create UI During the game only on client */
 	UFUNCTION(Client, Unreliable)
 	void DeleteOwnUI();
-	void DeleteOwnUI_Implementation();
 
 	UFUNCTION(Client, Unreliable)
 	void CreateOwnUI();
-	void CreateOwnUI_Implementation();
 
 	/* Delete and Create UI During the game only on client */
 };
